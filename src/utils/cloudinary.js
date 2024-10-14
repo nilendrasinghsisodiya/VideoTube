@@ -8,7 +8,7 @@ import fs from "fs"
         api_secret: process.env.CLOUDINARY_API_SECRET // Click 'View API Keys' above to copy your API secret
     });
 
-    const uploadONCloudinay = async (filePath)=>{
+    const uploadOnCloudinary = async (filePath)=>{
         try{ 
             if(!filePath) return null
 
@@ -26,4 +26,4 @@ import fs from "fs"
     }
     
 
-    export {uploadONCloudinay}
+    export {uploadOnCloudinary}
