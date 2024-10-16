@@ -4,6 +4,8 @@ import { app } from "./app.js";
 
 dotenv.config({path:"./env"})
 
+console.log(process.env.CLOUNDINARY_API_KEY);
+
 
 connectDB()
 .then(()=>{
