@@ -75,4 +75,97 @@ if(req.files && Array.isArray(req.files.coverImage) && req.file.coverImage[0].le
     .json(new ApiResponse(200, userExist, "User created Succesfully"));
 });
 
-export { registerUser };
+const generateAccessAndRefereshTokens = async(userId)=>{
+  try{
+    const user = await User.findById(userId);
+    const accessToken = user.generateAccessToken();
+    const refereshToken = user.generateRefereshToken();
+    user.refershToken = refereshToken;
+    await user.save({validateBeforeSave: false});
+
+    return {accessToken , refereshToken};
+
+  }catch(error){
+    throw new ApiError(500, "something went wrong while generating referesh and access token");
+  }
+}
+
+const loginUser = asyncHandler(async(req, res)=>{})
+   // get data form req -> data
+   // username and email get any one 
+   // find the user
+   // if user validate password
+   // if not user throw error
+   // if password matches login user
+   // if password does not matches then throw error
+   // send cookie and send response 
+
+   const {email , username , password} = req.body;
+   if( !email && !username){
+    throw new ApiError(400, "username or password is required");
+   }
+
+   if(email){
+    let userExist = await User.findone({
+      $or: [{username},{email}]
+    });
+    if(userExist){
+      const validPassword = await userExist.isPasswordCorrect(password);
+      if(validPassword){
+
+        const {accessToken , refereshToken} = await generateAccessAndRefereshTokens(user._id);
+
+        const loggedInUser = await User.findById(user._id).select("-password -refereshToken");
+
+        const options = {
+          httpOnly: ture,
+          secure: true
+        }
+
+        return res.status(200).cookie("accessToken", accessToken, options).cookie("refershToken",refereshToken, options).json(
+          new ApiResponse(
+            200,{
+              user: loggedInUser,
+              refereshToken, accessToken
+            },
+            "User logedIN successfully "
+          ))
+        
+
+
+      }else{
+        throw new ApiError(400, "password is incorrect");
+      }
+
+    }else{
+      throw new ApiError(400, "user does not exist");
+
+    }
+   }
+
+   const logoutUser = asyncHandler(async(req, res)=>{
+
+    const UserToLogout = await User.findByIdAndUpdate(
+      req.user._id,
+      {
+        $set:{
+          refreshToken: undefined
+        } }, 
+        {
+          new: true
+        } );
+
+      const options = {
+        httpOnly: true,
+      secure: true
+      }
+
+      return res
+      .status(200)
+      .clearCookie("accessToken", options)
+      .clearCookie("refershToken", options)
+      .json(new ApiResponse(200,{},"user logged out"));
+
+
+   })
+export { registerUser , loginUser , logoutUser};
