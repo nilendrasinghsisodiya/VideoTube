@@ -32,23 +32,32 @@ const registerUser = asyncHandler(async (req, res) => {
   if (existedUser) {
     throw new ApiError(409, "User with this email or username exists");
   }
-  console.log("user Check ",existedUser);
+  console.log("user Check ", existedUser);
+  console.log(req.files);
 
   const avatarLocalPath = req.files?.avatar[0]?.path;
+
+  console.log(avatarLocalPath);
+
+  let coverImageLocalPath;
   
-let coverImageLocalPath;
-if(req.files && Array.isArray(req.files.coverImage) && req.file.coverImage[0].length > 0){
-  coverImageLocalPath = req.files.coverImage[0]?.path
-}
+  if (
+    req.files &&
+    Array.isArray(req.files.coverImage) &&
+    req.files.coverImage.length > 0
+  ) {
+    coverImageLocalPath = req.files.coverImage[0]?.path;
+  }
+  
   console.log(req.files, avatarLocalPath, coverImageLocalPath);
   if (!avatarLocalPath) {
     throw new ApiError(400, "Avatar file needed");
   }
 
   const avatar = await uploadOnCloudinary(avatarLocalPath);
-  console.log( "avatar upload result on cloudinary : ", avatar);
+  console.log("avatar upload result on cloudinary : ", avatar);
   const coverImage = await uploadOnCloudinary(coverImageLocalPath);
-  console.log("coverImage upload result : ",coverImage)
+  console.log("coverImage upload result : ", coverImage);
   if (!avatar) {
     throw new ApiError(400, "Avatar file is required");
   }
@@ -69,103 +78,115 @@ if(req.files && Array.isArray(req.files.coverImage) && req.file.coverImage[0].le
   if (!userExist) {
     throw new ApiError(500, "Something went wrong while registering the user");
   }
-   console.log("userCreated with data: ", userExist);
+  console.log("userCreated with data: ", userExist);
   return res
     .status(201)
     .json(new ApiResponse(200, userExist, "User created Succesfully"));
 });
 
-const generateAccessAndRefereshTokens = async(userId)=>{
-  try{
+const generateAccessAndRefereshTokens = async (userId) => {
+  try {
     const user = await User.findById(userId);
-    const accessToken = user.generateAccessToken();
-    const refereshToken = user.generateRefereshToken();
+    const accessToken = user.generateAcessToken();
+    const refereshToken = user.generateRefreshToken();
+
+    console.log(accessToken,refereshToken);
     user.refershToken = refereshToken;
-    await user.save({validateBeforeSave: false});
+    await user.save({ validateBeforeSave: false });
 
-    return {accessToken , refereshToken};
-
-  }catch(error){
-    throw new ApiError(500, "something went wrong while generating referesh and access token");
+    return { accessToken, refereshToken };
+  } catch (error) {
+    console.log(error);
+    throw new ApiError(
+      500,
+      "something went wrong while generating referesh and access token"
+    );
   }
+};
+
+const loginUser = asyncHandler(async (req, res) => {
+  // get data form req -> data
+// username and email get any one
+// find the user
+// if user validate password
+// if not user throw error
+// if password matches login user
+// if password does not matches then throw error
+// send cookie and send response
+console.log(req.body);
+
+  const { email, username, password } = req.body;
+  
+if (!email && !username) {
+  throw new ApiError(400, "username and email is required");
 }
 
-const loginUser = asyncHandler(async(req, res)=>{})
-   // get data form req -> data
-   // username and email get any one 
-   // find the user
-   // if user validate password
-   // if not user throw error
-   // if password matches login user
-   // if password does not matches then throw error
-   // send cookie and send response 
+if (email) {
+  let userExist = await User.findOne({
+    $or: [{ username }, { email }],
+  });
+  if (userExist) {
+    const validPassword = await userExist.isPasswordCorrect(password);
+    if (validPassword) {
+      const { accessToken, refereshToken } =
+        await generateAccessAndRefereshTokens(userExist._id);
 
-   const {email , username , password} = req.body;
-   if( !email && !username){
-    throw new ApiError(400, "username or password is required");
-   }
-
-   if(email){
-    let userExist = await User.findone({
-      $or: [{username},{email}]
-    });
-    if(userExist){
-      const validPassword = await userExist.isPasswordCorrect(password);
-      if(validPassword){
-
-        const {accessToken , refereshToken} = await generateAccessAndRefereshTokens(user._id);
-
-        const loggedInUser = await User.findById(user._id).select("-password -refereshToken");
-
-        const options = {
-          httpOnly: ture,
-          secure: true
-        }
-
-        return res.status(200).cookie("accessToken", accessToken, options).cookie("refershToken",refereshToken, options).json(
-          new ApiResponse(
-            200,{
-              user: loggedInUser,
-              refereshToken, accessToken
-            },
-            "User logedIN successfully "
-          ))
-        
-
-
-      }else{
-        throw new ApiError(400, "password is incorrect");
-      }
-
-    }else{
-      throw new ApiError(400, "user does not exist");
-
-    }
-   }
-
-   const logoutUser = asyncHandler(async(req, res)=>{
-
-    const UserToLogout = await User.findByIdAndUpdate(
-      req.user._id,
-      {
-        $set:{
-          refreshToken: undefined
-        } }, 
-        {
-          new: true
-        } );
+      const loggedInUser = await User.findById(userExist._id).select(
+        "-password -refereshToken"
+      );
 
       const options = {
         httpOnly: true,
-      secure: true
-      }
+        secure: true,
+      };
 
       return res
-      .status(200)
-      .clearCookie("accessToken", options)
-      .clearCookie("refershToken", options)
-      .json(new ApiResponse(200,{},"user logged out"));
+        .status(200)
+        .cookie("accessToken", accessToken, options)
+        .cookie("refershToken", refereshToken, options)
+        .json(
+          new ApiResponse(
+            200,
+            {
+              user: loggedInUser,
+              refereshToken,
+              accessToken,
+            },
+            "User logedIN successfully "
+          )
+        );
+    } else {
+      throw new ApiError(400, "password is incorrect");
+    }
+  } else {
+    throw new ApiError(400, "user does not exist");
+  }
+}});
 
 
-   })
-export { registerUser , loginUser , logoutUser};
+
+const logoutUser = asyncHandler(async (req, res) => {
+  const UserToLogout = await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      $set: {
+        refreshToken: undefined,
+      },
+    },
+    {
+      new: true,
+    }
+  );
+
+  const options = {
+    httpOnly: true,
+    secure: true,
+  };
+
+  return res
+    .status(200)
+    .clearCookie("accessToken", options)
+    .clearCookie("refershToken", options)
+    .json(new ApiResponse(200, {}, "user logged out"));
+});
+export { registerUser, loginUser, logoutUser };
