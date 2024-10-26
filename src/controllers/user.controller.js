@@ -3,6 +3,8 @@ import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+import { JsonWebTokenError as jwt } from "jsonwebtoken";
+
 const registerUser = asyncHandler(async (req, res) => {
   // get user details
 
@@ -183,10 +185,58 @@ const logoutUser = asyncHandler(async (req, res) => {
     secure: true,
   };
 
+  consle.log(UserToLogout);
+
   return res
     .status(200)
     .clearCookie("accessToken", options)
     .clearCookie("refershToken", options)
     .json(new ApiResponse(200, {}, "user logged out"));
 });
-export { registerUser, loginUser, logoutUser };
+
+const refreshAccessToken = asyncHandler(async(req,res)=>{
+
+  try {
+    const incomingRefreshToekn = req.cookies.refereshToken || req.body.refereshToken ;
+    if(!incomingRefreshToekn){throw new ApiError(401,"unauthorized request")}
+  
+    const decodedToken = await jwt.verify(incomingRefreshToekn,
+      process.env.REFRESH_TOKEN_SECRET
+    )
+  
+    const user = await User.findById(decodedToken?._id)
+  
+    if(!user){
+      throw new ApiError(401, "Invalid refersh token");
+    }
+  
+    if(user?.refreshToken !== incomingRefreshToekn ){
+      throw new ApiError(401,"Refresh token is expired or used");
+    }
+  
+    const options = {
+      httpOnly: true, 
+      secure: true
+    }
+  
+     const{accessToken, newRefreshToken} = await generateAccessAndRefereshTokens(user._id)
+  
+     return res.status(200)
+     .cookie("accessToken",accessToken)
+     .cookie("refreshToken",newRefreshToken)
+     .json(
+      new ApiResponse(200,{
+        accessToken: accessToken,refreshToken: newRefreshToken
+      },"Access token refresh")
+     )
+  
+  
+  } catch (error) {
+
+    console.log(error)
+    throw new ApiError(
+      401 ,  
+      error.message || "something went wrong when generating tokens");
+    
+  } })
+export { registerUser, loginUser, logoutUser , refreshAccessToken };
