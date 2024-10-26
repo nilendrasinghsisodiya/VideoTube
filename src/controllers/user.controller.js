@@ -42,7 +42,7 @@ const registerUser = asyncHandler(async (req, res) => {
   console.log(avatarLocalPath);
 
   let coverImageLocalPath;
-  
+
   if (
     req.files &&
     Array.isArray(req.files.coverImage) &&
@@ -50,7 +50,7 @@ const registerUser = asyncHandler(async (req, res) => {
   ) {
     coverImageLocalPath = req.files.coverImage[0]?.path;
   }
-  
+
   console.log(req.files, avatarLocalPath, coverImageLocalPath);
   if (!avatarLocalPath) {
     throw new ApiError(400, "Avatar file needed");
@@ -92,7 +92,7 @@ const generateAccessAndRefereshTokens = async (userId) => {
     const accessToken = user.generateAcessToken();
     const refereshToken = user.generateRefreshToken();
 
-    console.log(accessToken,refereshToken);
+    console.log(accessToken, refereshToken);
     user.refershToken = refereshToken;
     await user.save({ validateBeforeSave: false });
 
@@ -108,64 +108,63 @@ const generateAccessAndRefereshTokens = async (userId) => {
 
 const loginUser = asyncHandler(async (req, res) => {
   // get data form req -> data
-// username and email get any one
-// find the user
-// if user validate password
-// if not user throw error
-// if password matches login user
-// if password does not matches then throw error
-// send cookie and send response
-console.log(req.body);
+  // username and email get any one
+  // find the user
+  // if user validate password
+  // if not user throw error
+  // if password matches login user
+  // if password does not matches then throw error
+  // send cookie and send response
+  console.log(req.body);
 
   const { email, username, password } = req.body;
-  
-if (!email && !username) {
-  throw new ApiError(400, "username and email is required");
-}
 
-if (email) {
-  let userExist = await User.findOne({
-    $or: [{ username }, { email }],
-  });
-  if (userExist) {
-    const validPassword = await userExist.isPasswordCorrect(password);
-    if (validPassword) {
-      const { accessToken, refereshToken } =
-        await generateAccessAndRefereshTokens(userExist._id);
-
-      const loggedInUser = await User.findById(userExist._id).select(
-        "-password -refereshToken"
-      );
-
-      const options = {
-        httpOnly: true,
-        secure: true,
-      };
-
-      return res
-        .status(200)
-        .cookie("accessToken", accessToken, options)
-        .cookie("refershToken", refereshToken, options)
-        .json(
-          new ApiResponse(
-            200,
-            {
-              user: loggedInUser,
-              refereshToken,
-              accessToken,
-            },
-            "User logedIN successfully "
-          )
-        );
-    } else {
-      throw new ApiError(400, "password is incorrect");
-    }
-  } else {
-    throw new ApiError(400, "user does not exist");
+  if (!email && !username) {
+    throw new ApiError(400, "username and email is required");
   }
-}});
 
+  if (email) {
+    let userExist = await User.findOne({
+      $or: [{ username }, { email }],
+    });
+    if (userExist) {
+      const validPassword = await userExist.isPasswordCorrect(password);
+      if (validPassword) {
+        const { accessToken, refereshToken } =
+          await generateAccessAndRefereshTokens(userExist._id);
 
+        const loggedInUser = await User.findById(userExist._id).select(
+          "-password -refereshToken"
+        );
+
+        const options = {
+          httpOnly: true,
+          secure: true,
+        };
+
+        return res
+          .status(200)
+          .cookie("accessToken", accessToken, options)
+          .cookie("refershToken", refereshToken, options)
+          .json(
+            new ApiResponse(
+              200,
+              {
+                user: loggedInUser,
+                refereshToken,
+                accessToken,
+              },
+              "User logedIN successfully "
+            )
+          );
+      } else {
+        throw new ApiError(400, "password is incorrect");
+      }
+    } else {
+      throw new ApiError(400, "user does not exist");
+    }
+  }
+});
 
 const logoutUser = asyncHandler(async (req, res) => {
   const UserToLogout = await User.findByIdAndUpdate(
@@ -194,49 +193,109 @@ const logoutUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "user logged out"));
 });
 
-const refreshAccessToken = asyncHandler(async(req,res)=>{
-
+const refreshAccessToken = asyncHandler(async (req, res) => {
   try {
-    const incomingRefreshToekn = req.cookies.refereshToken || req.body.refereshToken ;
-    if(!incomingRefreshToekn){throw new ApiError(401,"unauthorized request")}
-  
-    const decodedToken = await jwt.verify(incomingRefreshToekn,
+    const incomingRefreshToekn =
+      req.cookies.refereshToken || req.body.refereshToken;
+    if (!incomingRefreshToekn) {
+      throw new ApiError(401, "unauthorized request");
+    }
+
+    const decodedToken = await jwt.verify(
+      incomingRefreshToekn,
       process.env.REFRESH_TOKEN_SECRET
-    )
-  
-    const user = await User.findById(decodedToken?._id)
-  
-    if(!user){
+    );
+
+    const user = await User.findById(decodedToken?._id);
+
+    if (!user) {
       throw new ApiError(401, "Invalid refersh token");
     }
-  
-    if(user?.refreshToken !== incomingRefreshToekn ){
-      throw new ApiError(401,"Refresh token is expired or used");
-    }
-  
-    const options = {
-      httpOnly: true, 
-      secure: true
-    }
-  
-     const{accessToken, newRefreshToken} = await generateAccessAndRefereshTokens(user._id)
-  
-     return res.status(200)
-     .cookie("accessToken",accessToken)
-     .cookie("refreshToken",newRefreshToken)
-     .json(
-      new ApiResponse(200,{
-        accessToken: accessToken,refreshToken: newRefreshToken
-      },"Access token refresh")
-     )
-  
-  
-  } catch (error) {
 
-    console.log(error)
+    if (user?.refreshToken !== incomingRefreshToekn) {
+      throw new ApiError(401, "Refresh token is expired or used");
+    }
+
+    const options = {
+      httpOnly: true,
+      secure: true,
+    };
+
+    const { accessToken, newRefreshToken } =
+      await generateAccessAndRefereshTokens(user._id);
+
+    return res
+      .status(200)
+      .cookie("accessToken", accessToken)
+      .cookie("refreshToken", newRefreshToken)
+      .json(
+        new ApiResponse(
+          200,
+          {
+            accessToken: accessToken,
+            refreshToken: newRefreshToken,
+          },
+          "Access token refresh"
+        )
+      );
+  } catch (error) {
+    console.log(error);
     throw new ApiError(
-      401 ,  
-      error.message || "something went wrong when generating tokens");
-    
-  } })
-export { registerUser, loginUser, logoutUser , refreshAccessToken };
+      401,
+      error.message || "something went wrong when generating tokens"
+    );
+  }
+});
+
+const changeCurrentPassword = asyncHandler(async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
+  const user = await User.findById(req.user?._id);
+  const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
+
+  if (!isPasswordCorrect) {
+    throw new ApiError(401, "old password not correct");
+  }
+
+  user.password = newPassword;
+  await user.save({ validateBeforeSave: false });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "password saved successfully"));
+});
+
+const getCurrentUser = asyncHandler(async (req, res) => {
+  return res
+    .status(200)
+    .json(new ApiResponse(200, req.user, "current user fetched successfully"));
+});
+
+const updateAccontDetails = asyncHandler(async (req, res) => {
+  const { fullName, email } = req.body;
+  if (!fullName || !email) {
+    throw new ApiError(400, "field are empty");
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        fullName,
+        email,
+      },
+    },
+    { new: true }
+  ).select("--password");
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user, "user details updated sucessfully"));
+});
+export {
+  registerUser,
+  loginUser,
+  logoutUser,
+  refreshAccessToken,
+  changeCurrentPassword,
+  getCurrentUser,
+};
