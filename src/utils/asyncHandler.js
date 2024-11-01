@@ -9,7 +9,7 @@ const asyncHandler = (requestHandler)=>{
 
 
 export {asyncHandler}
-// can be done this way too but it is redudant
+// can be done this way too but it is redundant
 // return (req,res,next)=>{
 // return new Promise((reject,resolve)=>{
 //   resolve(req,res,next)
@@ -23,7 +23,7 @@ export {asyncHandler}
 
 
 
-// try catch approch
+// try catch approach
 
 // const asyncHandler = (func)=> async(req,res ,next)=> {
 //     try{
@@ -32,7 +32,7 @@ export {asyncHandler}
 
 //     }catch(error){
 //         res.status(error.code || 500).json({
-//             sucess: false,
+//             success: false,
 //          message: error.message
 //         })
 //     }

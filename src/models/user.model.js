@@ -18,7 +18,7 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
     },
-    fullname: {
+    fullName: {
       type: String,
       required: true,
       trim: true,
@@ -38,7 +38,7 @@ const userSchema = new mongoose.Schema(
       },
     ],
     password: {
-      type: String, // needs to enycr and decrypted
+      type: String, // needs to encrypt and decrypted
       required: [true, "password is required"],
     },
     refreshToken: {
@@ -58,13 +58,13 @@ userSchema.methods.isPasswordCorrect = async function (password) {
   return await bcrypt.compare(password, this.password);
 };
 
-userSchema.methods.generateAcessToken = function () {
+userSchema.methods.generateAccessToken = function () {
   return jwt.sign(
     {
       _id: this._id,
       email: this.email, // payload object
       username: this.username,
-      fullname: this.fullName,
+      fullName: this.fullName,
     },
     process.env.ACCESS_TOKEN_SECRET,
     {

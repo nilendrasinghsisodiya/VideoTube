@@ -1,6 +1,6 @@
 import mongoose from "mongoose"
 
-const subscriptionSchmea = new mongoose.Schema({
+const subscriptionSchema = new mongoose.Schema({
 subscriber:{
     type: mongoose.Schema.Types.ObjectId,
     ref: "Users"
@@ -13,4 +13,4 @@ channels: {
 }
 },{timestamps:true});
 
-export  const Subscription = mongoose.model("subscription", subscriptionSchmea);
+export  const Subscription = mongoose.model("subscription", subscriptionSchema);
