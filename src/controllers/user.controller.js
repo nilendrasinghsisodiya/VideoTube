@@ -398,14 +398,80 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
   ]);
 
   console.log(channel);
-  if(!channel?.length){
+  if (!channel?.length) {
     throw new ApiError(404, "channel does not exists");
   }
-   return res
-   .status(200)
-   .json(
-    new ApiResponse(200, channel[0],"User channel fetched successfully")
-   );
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, channel[0], "User channel fetched successfully")
+    );
+});
+
+const getUserWatchHistory = asyncHandler(async (req, res) => {
+  const { isLogined } = req?.user;
+  if (!isLogined) {
+    throw new ApiError(400, "User not Logged In");
+  }
+
+  const user = await User.aggregate([
+    {
+      $match: {
+        _id: new mongoose.Types.ObjectId(isLogined?._id),
+      },
+    },
+    {
+      $lookup: {
+        from: "videos",
+        localField: "watchHistory",
+        foreignField: "_id",
+        as: "watchHistory",
+        pipeline: [
+          {
+            $lookup: {
+              from: "users",
+              localField: "owner",
+              foreignField: "_id",
+              as: "owner",
+              pipeline: [
+                {
+                  $project: {
+                    fullName: 1,
+                    avatar: 1,
+                    username: 1,
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+    {
+      $addFields: {
+        owner: {
+          $first: "$owneer",
+        },
+      },
+    },
+  ]);
+
+  if (!user) {
+    throw new ApiError(
+      404,
+      "user does not exist or watchHistory does not exist"
+    );
+  }
+  console.log(user);
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        user[0].watchHistory,
+        "user watchHistory added successfully"
+      )
+    );
 });
 
 export {
@@ -417,4 +483,7 @@ export {
   getCurrentUser,
   updateUserAvatar,
   updateUserCoverImage,
+  getUserChannelProfile,
+  getUserWatchHistory,
+  updateAccountDetails,
 };
