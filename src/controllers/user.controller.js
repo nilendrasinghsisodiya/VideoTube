@@ -200,8 +200,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     if (!incomingRefreshToken) {
       throw new ApiError(401, "unauthorized request");
     }
-
-    const decodedToken = await jwt.verify(
+    const decodedToken =  jwt.verify(
       incomingRefreshToken,
       process.env.REFRESH_TOKEN_SECRET
     );
@@ -249,6 +248,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 
 const changeCurrentPassword = asyncHandler(async (req, res) => {
   const { oldPassword, newPassword } = req.body;
+  console.log(req.body,oldPassword, newPassword);
   const user = await User.findById(req.user?._id);
   const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
 
@@ -341,44 +341,43 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
 
 const getUserChannelProfile = asyncHandler(async (req, res) => {
   const { username } = req?.params;
+  
   if (!username?.trim()) {
-    throw new ApiError(400, "username is missing");
+    throw new ApiError(400, "Username is missing");
   }
 
-  const channel = await User.aggregatePaginate([
+  const channels = await User.aggregate([
     {
       $match: {
-        username: username?.toLowerCase(),
+        username: username.toLowerCase(),
       },
     },
     {
       $lookup: {
         from: "subscriptions",
         localField: "_id",
-        foreignField: " channel",
-        as: " subscriber",
+        foreignField: "channel",
+        as: "subscribers",
       },
     },
     {
       $lookup: {
         from: "subscriptions",
-        localField: " _id",
+        localField: "_id",
         foreignField: "subscriber",
-        as: " subscribedTo",
+        as: "subscribedTo",
       },
     },
     {
       $addFields: {
         subscribersCount: {
-          $size: " $subscribers",
+          $size: "$subscribers",
         },
         channelsSubscribedToCount: {
           $size: "$subscribedTo",
         },
         isSubscribed: {
-          $cond: {
-            if: { $in: [req.user?._id, "$subscribers.subscriber"] },
-          },
+          $in: [req.user?._id, "$subscribers.subscriber"],
         },
       },
     },
@@ -397,16 +396,17 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
     },
   ]);
 
-  console.log(channel);
-  if (!channel?.length) {
-    throw new ApiError(404, "channel does not exists");
+  console.log(channels);
+  
+  if (!channels.length) {
+    throw new ApiError(404, "Channel does not exist");
   }
-  return res
-    .status(200)
-    .json(
-      new ApiResponse(200, channel[0], "User channel fetched successfully")
-    );
+
+  return res.status(200).json(
+    new ApiResponse(200, channels[0], "User channel fetched successfully")
+  );
 });
+
 
 const getUserWatchHistory = asyncHandler(async (req, res) => {
   const { isLogined } = req?.user;
