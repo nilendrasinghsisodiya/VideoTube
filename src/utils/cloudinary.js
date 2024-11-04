@@ -18,7 +18,14 @@ import fs from "fs"
                 }
             )
         console.log("file upoladed successfully", response.url);
-        fs.unlinkSync(filePath);
+        fs.unlink(filePath,(err)=>{
+            if(err){
+                console.error("Error while deleting file after upload", err.message);
+            }
+            else{
+                console.log("file removed successfully after upload");
+            }
+        });
         return response;
         } catch (error) {
             console.error("Cloudinary upload error:", error);
