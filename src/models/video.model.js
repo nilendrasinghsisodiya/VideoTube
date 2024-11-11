@@ -43,5 +43,8 @@ const videoSchema = new Schema(
 );
 
 videoSchema.plugin(mongooseAggregatePaginate);
+videoSchema.methods.isOwner = function(userId){
+ return String(userId) === String(this.owner._id);
+}
 
 export const Video = mongoose.model("Video", videoSchema);

@@ -80,21 +80,89 @@ const publishAVideo = asyncHandler(async (req, res) => {
 const getVideoById = asyncHandler(async (req, res) => {
     const { videoId } = req.params
     //TODO: get video by id
+    const video = await Video.findById(videoId);
+    if(!video){
+        throw new ApiError(400,"Invalid videoId or the video does not exist");
+    } 
+
+    return res.status(200).json(new ApiResponse(200,video,"Video Fetched successfully "))
 })
 
 const updateVideo = asyncHandler(async (req, res) => {
-    const { videoId } = req.params
-    //TODO: update video details like title, description, thumbnail
+    const { videoId } = req.params;
+    const isOwner = Video.isOwner(req?.user._id);
+    if(!isOwner){
+        throw new ApiError(400,"you have to be owner to update the video details")
+    }
+    const { title, description } = req.body;
+    const thumbnailLocalPath = req?.files?.thumbnail; // Adjust to match file upload structure
+    let updatedThumbnailLink = null;
 
-})
+    // Upload thumbnail to Cloudinary if provided
+    if (thumbnailLocalPath) {
+        updatedThumbnailLink = await uploadOnCloudinary(thumbnailLocalPath);
+        if (!updatedThumbnailLink) {
+            throw new ApiError(500, "Failed to upload new thumbnail to Cloudinary");
+        }
+    }
+
+    // Create update data with only non-null fields
+    const updateData = {};
+    if (title) updateData.title = title;
+    if (description) updateData.description = description;
+    if (updatedThumbnailLink) updateData.thumbnail = updatedThumbnailLink;
+
+    // Check if there’s at least one field to update
+    if (Object.keys(updateData).length === 0) {
+        throw new ApiError(400, "No details provided for update");
+    }
+
+    // Perform a single database update operation
+    const video = await Video.findByIdAndUpdate(videoId, { $set: updateData }, { new: true });
+    if (!video) {
+        throw new ApiError(404, "Video not found");
+    }
+
+    return res.status(200).json(new ApiResponse(200, video, "Video updated successfully"));
+});
+
 
 const deleteVideo = asyncHandler(async (req, res) => {
     const { videoId } = req.params
+    const isOwner = Video.isOwner(req?.user._id);
+    if(!isOwner){
+        throw new ApiError(400,"You have to be owner to delete a video")
+    }
+
+    const deletedRes = await Video.deleteOne({videoId})
+    console.log(deletedRes);
+    return res
+    .status(200)
+    .json(new ApiResponse(200,{},"video deleted successfully"));
+
     //TODO: delete video
 })
 
 const togglePublishStatus = asyncHandler(async (req, res) => {
     const { videoId } = req.params
+    const isOwner = Video.isOwner(req?.user._id);
+    if(!isOwner){
+        throw new ApiError(400,"You have to be logged In and be the Owner of the Video to change publish settings");
+    }
+    const video = await Video.findOneAndUpdate(videoId,
+        {$set:{
+            isPublished: !video.isPublished
+        }},
+        {new: true}
+    )
+    if(!video){
+        throw new ApiError(400,"video not found")
+    }
+     
+    return res
+    .status(200)
+    .json(new ApiResponse(200,video,"publish status updated successfully"))
+    
 })
 
 export {
