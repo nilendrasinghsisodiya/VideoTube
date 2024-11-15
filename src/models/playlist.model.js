@@ -18,4 +18,6 @@ const playlistSchema = new Schema({
     }
 },{timestamps: true})
 
+playlistSchema.methods.isOwner = function(userId){return String(this.owner)=== String(userId)};
+
 export const Playlist = Mongoose.model("Playlist",playlistSchema);
