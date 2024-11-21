@@ -10,6 +10,7 @@ import fs from "fs"
 
     const uploadOnCloudinary = async (filePath)=>{
         try{ 
+            console.log(filePath)
             if(!filePath) return null
 
              let response = await cloudinary.uploader.upload(filePath, 
@@ -18,14 +19,7 @@ import fs from "fs"
                 }
             )
         console.log("file upoladed successfully", response.url);
-        fs.unlink(filePath,(err)=>{
-            if(err){
-                console.error("Error while deleting file after upload", err.message);
-            }
-            else{
-                console.log("file removed successfully after upload");
-            }
-        });
+        fs.unlinkSync(filePath);
         return response;
         } catch (error) {
             console.error("Cloudinary upload error:", error);
@@ -38,5 +32,4 @@ import fs from "fs"
         }
     }
     
-
     export {uploadOnCloudinary}
