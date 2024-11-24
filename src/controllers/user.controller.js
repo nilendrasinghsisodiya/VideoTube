@@ -4,6 +4,7 @@ import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 
 const registerUser = asyncHandler(async (req, res) => {
   // get user details
@@ -18,11 +19,11 @@ const registerUser = asyncHandler(async (req, res) => {
   // check for user creation
   // return res
 
-  const { fullName, username, email, password } = req.body;
+  const { fullname, username, email, password } = req.body;
   console.log("email: ", email);
 
   if (
-    [fullName, email.username, password].some((field) => field?.trim() === "")
+    [fullname, email.username, password].some((field) => field?.trim() === "")
   ) {
     throw new ApiError(400, "some fields are empty");
   }
@@ -65,7 +66,7 @@ const registerUser = asyncHandler(async (req, res) => {
   }
 
   const user = await User.create({
-    fullName,
+    fullname,
     avatar: avatar.url,
     coverImage: coverImage.url,
     email,
@@ -271,8 +272,8 @@ const getCurrentUser = asyncHandler(async (req, res) => {
 });
 
 const updateAccountDetails = asyncHandler(async (req, res) => {
-  const { fullName, email } = req.body;
-  if (!fullName || !email) {
+  const { fullname, email } = req.body;
+  if (!fullname || !email) {
     throw new ApiError(400, "field are empty");
   }
 
@@ -280,7 +281,7 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
     req.user?._id,
     {
       $set: {
-        fullName,
+        fullname,
         email,
       },
     },
@@ -369,6 +370,14 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
       },
     },
     {
+      $lookup:{
+        from: "videos",
+        localField: "_id",
+        foreignField: "owner",
+        as: "videos"
+      }
+    },
+    {
       $addFields: {
         subscribersCount: {
           $size: "$subscribers",
@@ -383,7 +392,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
     },
     {
       $project: {
-        fullName: 1,
+        fullname: 1,
         username: 1,
         subscribersCount: 1,
         channelsSubscribedToCount: 1,
@@ -392,6 +401,13 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
         coverImage: 1,
         email: 1,
         createdAt: 1,
+        videos: {
+          _id: 1,
+          title: 1,
+          thumbnail: 1,
+          views:1,
+          duration:1
+        }
       },
     },
   ]);
@@ -409,15 +425,17 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
 
 
 const getUserWatchHistory = asyncHandler(async (req, res) => {
-  const { isLogined } = req?.user;
+  const isLogined  = req?.user;
+  console.log("islogined : ",isLogined)
   if (!isLogined) {
     throw new ApiError(400, "User not Logged In");
   }
+ 
 
   const user = await User.aggregate([
     {
       $match: {
-        _id: new mongoose.Types.ObjectId(isLogined?._id),
+        _id: isLogined._id,
       },
     },
     {
@@ -436,7 +454,7 @@ const getUserWatchHistory = asyncHandler(async (req, res) => {
               pipeline: [
                 {
                   $project: {
-                    fullName: 1,
+                    fullname: 1,
                     avatar: 1,
                     username: 1,
                   },
@@ -450,7 +468,7 @@ const getUserWatchHistory = asyncHandler(async (req, res) => {
     {
       $addFields: {
         owner: {
-          $first: "$owneer",
+          $first: "$owner",
         },
       },
     },
@@ -462,7 +480,7 @@ const getUserWatchHistory = asyncHandler(async (req, res) => {
       "user does not exist or watchHistory does not exist"
     );
   }
-  console.log(user);
+  console.log("user : ",user);
   return res
     .status(200)
     .json(
@@ -473,6 +491,63 @@ const getUserWatchHistory = asyncHandler(async (req, res) => {
       )
     );
 });
+const getUserPlaylists = asyncHandler(async (req, res) => {
+  console.log(req.params)
+
+  const { username } = req.params;
+
+  // Ensure `userId` is a valid ObjectId
+  if (!username) {
+    throw new ApiError(400, "Invalid user ID.");
+  }
+  const user  = await User.findOne({username : username});
+  if(!user){
+    throw new ApiError(400,"invalid username");
+  }
+
+
+  // Aggregation pipeline
+  const playlists = await User.aggregate([
+    {
+      $match: { _id: user._id }, // Match userId
+    },
+    {
+      $lookup: {
+        from: "playlists",          // Name of the collection to join
+        localField: "_id",          // User's _id in the User collection
+        foreignField: "owner",      // Owner field in the Playlist collection
+        as: "userPlaylists",        // Output array field name
+      },
+    },
+    {
+      $project: {
+        _id: 1,                     // Include user ID
+        username: 1,                // Include username
+        avatar: 1,                  // Include avatar
+        userPlaylists: {
+          _id: 1,                  // Include playlist fields
+          name: 1,
+          description: 1,
+        },
+      },
+    },
+  ]);
+
+  // Check if playlists are found
+  if (playlists.length === 0) {
+    throw new ApiError(404, "No playlists found for this user.");
+  }
+
+  // Return the user's playlists
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      playlists[0].userPlaylists, // Return user's playlists
+      "Playlists fetched successfully."
+    )
+  );
+});
+
 
 export {
   registerUser,
@@ -486,4 +561,5 @@ export {
   getUserChannelProfile,
   getUserWatchHistory,
   updateAccountDetails,
+  getUserPlaylists
 };

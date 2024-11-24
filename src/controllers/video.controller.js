@@ -146,7 +146,24 @@ const getVideoById = asyncHandler(async (req, res) => {
   if (!isValidId) {
     throw new ApiError(400, "invalid videoId");
   }
-  const video = await Video.findById(videoId);
+  const video = await Video.findByIdAndUpdate(
+    {_id: videoId},
+    {
+    $inc:{views:1}
+  },
+{new : true});
+const userId = req?.user._id;
+
+if (userId) {
+  const result = await User.findByIdAndUpdate({_id: userId},
+    {$addToSet:{
+      watchHistory:videoId
+    }}
+  );
+  if(!result){
+    throw new ApiError(500,"failed to add video to the user watch history");
+  }
+}
   if (!video) {
     throw new ApiError(400, "Invalid videoId or the video does not exist");
   }

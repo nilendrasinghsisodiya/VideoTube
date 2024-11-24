@@ -11,6 +11,7 @@ import {
   updateUserCoverImage,
   getUserChannelProfile,
   getUserWatchHistory,
+  getUserPlaylists,
 } from "../controllers/user.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import { verifyJwt } from "../middlewares/auth.middleware.js";
@@ -50,5 +51,7 @@ router
 router.route("/channel/:username").get(verifyJwt, getUserChannelProfile);
 
 router.route("/history").get(verifyJwt, getUserWatchHistory);
+
+router.route("/playlists/:username").get(getUserPlaylists);
 
 export default router;
