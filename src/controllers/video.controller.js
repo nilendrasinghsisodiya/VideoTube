@@ -4,7 +4,7 @@ import { User } from "../models/user.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { deleteFromCloudinary, uploadOnCloudinary } from "../utils/cloudinary.js";
 
 const getAllVideos = asyncHandler(async (req, res) => {
   try {
@@ -197,12 +197,14 @@ const updateVideo = asyncHandler(async (req, res) => {
       throw new ApiError(500, "Failed to upload new thumbnail to Cloudinary");
     }
   }
-
+   const oldPublicId = video.thumbnailPublicId;
   // Create update data with only non-null fields
   const updateData = {};
   if (title) updateData.title = title;
   if (description) updateData.description = description;
-  if (updatedThumbnailLink) updateData.thumbnail = updatedThumbnailLink?.url;
+  if (updatedThumbnailLink){
+     updateData.thumbnail = updatedThumbnailLink?.url;
+    updateData.thumbnailPublicId = updatedThumbnailLink?.public_id;}
 
   // Check if there’s at least one field to update
   if (Object.keys(updateData).length === 0) {
@@ -217,6 +219,10 @@ const updateVideo = asyncHandler(async (req, res) => {
   );
   if (!updatedVideo) {
     throw new ApiError(404, "Video not found");
+  }
+  if(updatedThumbnailLink){
+    const deletedResult = await deleteFromCloudinary(oldPublicId);
+    console.log("deleted old thumbnail : ",deletedResult);
   }
 
   return res
@@ -234,9 +240,12 @@ const deleteVideo = asyncHandler(async (req, res) => {
   if (!isOwner) {
     throw new ApiError(400, "You have to be owner to delete a video");
   }
+  const oldPublicId = video.videoFilePublicId;
 
   const deletedRes = await Video.findByIdAndDelete(videoId );
-  console.log(deletedRes);
+  console.log("deleted video result form db : ",deletedRes);
+  const deletedResult = await deleteFromCloudinary(oldPublicId);
+  console.log("video dleted from cloudinary : ",deletedResult);
   return res
     .status(200)
     .json(new ApiResponse(200, {}, "video deleted successfully"));

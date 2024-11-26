@@ -1,35 +1,46 @@
-import  {v2 as cloudinary} from "cloudinary"
-import fs from "fs"
+import { v2 as cloudinary } from "cloudinary";
+import fs from "fs";
+import path from "path";
 
-    // cloudinary Configuration
-    cloudinary.config({ 
-        cloud_name: process.env.CLOUNDINARY_CLOUD_NAME , 
-        api_key: process.env.CLOUNDINARY_API_KEY , 
-        api_secret: process.env.CLOUNDINARY_API_SECRET // Click 'View API Keys' above to copy your API secret
+// cloudinary Configuration
+cloudinary.config({
+  cloud_name: process.env.CLOUNDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUNDINARY_API_KEY,
+  api_secret: process.env.CLOUNDINARY_API_SECRET, // Click 'View API Keys' above to copy your API secret
+});
+
+const uploadOnCloudinary = async (filePath, publicId) => {
+  try {
+    console.log(filePath);
+
+    if (!filePath) return null;
+
+    let response = await cloudinary.uploader.upload(filePath, {
+      resource_type: "auto",
+      public_id: publicId,
     });
+    console.log("file upoladed successfully", response.url);
+    fs.unlinkSync(filePath);
+    return response;
+  } catch (error) {
+    console.error("Cloudinary upload error:", error);
+    fs.unlink(filePath, (err) => {
+      if (err) {
+        console.error("Error removing file:", err);
+      }
+    });
+    return null;
+  }
+};
 
-    const uploadOnCloudinary = async (filePath)=>{
-        try{ 
-            console.log(filePath)
-            if(!filePath) return null
+const deleteFromCloudinary = async (publicId) => {
+  try {
+    const result = await cloudinary.uploader.destroy(publicId);
+    console.log("cloudinary destroy result : ", result);
+    return result;
+  } catch (error) {
+    console.error("Error delete the files from  cloud", error.message);
+  }
+};
 
-             let response = await cloudinary.uploader.upload(filePath, 
-                {
-                    resource_type: "auto"
-                }
-            )
-        console.log("file upoladed successfully", response.url);
-        fs.unlinkSync(filePath);
-        return response;
-        } catch (error) {
-            console.error("Cloudinary upload error:", error);
-            fs.unlink(filePath, (err) => {
-                if (err) {
-                    console.error("Error removing file:", err);
-                }
-            });
-            return null;
-        }
-    }
-    
-    export {uploadOnCloudinary}
+export { uploadOnCloudinary ,deleteFromCloudinary};

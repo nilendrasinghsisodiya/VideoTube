@@ -1,7 +1,7 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.model.js";
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { uploadOnCloudinary , deleteFromCloudinary} from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
@@ -69,6 +69,8 @@ const registerUser = asyncHandler(async (req, res) => {
     fullname,
     avatar: avatar.url,
     coverImage: coverImage.url,
+    avatarPublicId: avatar.public_id,
+    coverImagePublicId:coverImage?.public_id,
     email,
     password,
     username: username.toLowerCase(),
@@ -302,15 +304,20 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
   if (!avatar.url) {
     throw new ApiError(400, "Error while uploading on avatar");
   }
+  const oldPublicId = req?.user?.avatarPublicId;
+ 
   const user = await User.findByIdAndUpdate(
     req.user?._id,
     {
       $set: {
         avatar: avatar.url,
+        avatar:avatar.public_id
       },
     },
     { new: true }
   ).select("-password,-refreshToken");
+  const deleteResult = await deleteFromCloudinary(oldPublicId);
+  console.log("old avatar deleted successfully : ",deleteResult);
 
   return res
     .status(200)
@@ -322,19 +329,25 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     throw new ApiError(400, "cover image file missing");
   }
   const coverImage = await uploadOnCloudinary(coverImageLocalPath);
+  
   if (!coverImage.url) {
     throw new ApiError(400, "Error while uploading on avatar");
   }
+  console.log("old coverImageDeletedSuccessfully",deleteResult);
+  const oldPublicId = req?.user?.coverImagePublicId;
   const user = await User.findByIdAndUpdate(
     req.user?._id,
     {
       $set: {
         coverImage: coverImage.url,
+        coverImagePublicId: coverImage.public_id
       },
     },
     { new: true }
   ).select("-password,-refreshToken");
-
+  
+  const deleteResult = await deleteFromCloudinary(oldPublicId);
+  console.log("old coverimage deleted : ",deleteResult);
   return res
     .status(200)
     .json(new ApiResponse(200, user, "user cover image updated successfully"));
