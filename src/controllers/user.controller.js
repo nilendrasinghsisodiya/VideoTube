@@ -509,7 +509,7 @@ const getUserPlaylists = asyncHandler(async (req, res) => {
 
   const { username } = req.params;
 
-  // Ensure `userId` is a valid ObjectId
+  
   if (!username) {
     throw new ApiError(400, "Invalid user ID.");
   }
@@ -519,26 +519,26 @@ const getUserPlaylists = asyncHandler(async (req, res) => {
   }
 
 
-  // Aggregation pipeline
+
   const playlists = await User.aggregate([
     {
-      $match: { _id: user._id }, // Match userId
+      $match: { _id: user._id },
     },
     {
       $lookup: {
-        from: "playlists",          // Name of the collection to join
-        localField: "_id",          // User's _id in the User collection
-        foreignField: "owner",      // Owner field in the Playlist collection
-        as: "userPlaylists",        // Output array field name
+        from: "playlists",         
+        localField: "_id",       
+        foreignField: "owner",     
+        as: "userPlaylists",        
       },
     },
     {
       $project: {
-        _id: 1,                     // Include user ID
-        username: 1,                // Include username
-        avatar: 1,                  // Include avatar
+        _id: 1,                
+        username: 1,                
+        avatar: 1,                
         userPlaylists: {
-          _id: 1,                  // Include playlist fields
+          _id: 1,                  
           name: 1,
           description: 1,
         },
@@ -560,6 +560,42 @@ const getUserPlaylists = asyncHandler(async (req, res) => {
     )
   );
 });
+const getUserTweets = asyncHandler(async (req, res) => {
+  
+  const { username } = req.params;
+  
+  const userTweets = await User.aggregate([
+    { $match: { username:  username } },
+    {
+      $lookup: {
+        from: "tweets",
+        localField: "_id",
+        foreignField: "owner",
+        as: " userTweets",
+      },
+    },
+    {
+      $project: {
+        _id: 1,
+        username: 1,
+        userTweets: {
+         _id: 1,
+         content: 1,
+         createdAt:1
+          },
+        },
+      },
+    
+  ]);
+  if (userTweets.length === 0) {
+    throw new ApiError(500, "no tweets found for this user");
+  }
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, userTweets[0], "User tweets fetched successfully")
+    );
+});
 
 
 export {
@@ -574,5 +610,6 @@ export {
   getUserChannelProfile,
   getUserWatchHistory,
   updateAccountDetails,
-  getUserPlaylists
+  getUserPlaylists,
+  getUserTweets
 };
