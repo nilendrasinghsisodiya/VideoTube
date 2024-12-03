@@ -15,91 +15,82 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
     console.log(req.params, req.user);
     throw new ApiError(400, "Invalid Video ID");
   }
-  const userId  = req?.user._id;
-  const existingLike = await Like.findOne({likedby: userId , videoId: video._id});
+  const userId = req?.user._id;
+  const existingLike = await Like.findOne({
+    likedby: userId,
+    videoId: video._id,
+  });
 
-  
-if (!existingLike) {
-  
+  if (!existingLike) {
     const like = await Like.create({
       likedBy: userId,
       video: video._id,
     });
-   const updatedVideo = await  Video.aggregate([
+    const updatedVideo = await Video.aggregate([
       {
-        $match:{_id:  video._id}
+        $match: { _id: video._id },
       },
       {
-        $lookup:{
-          from : "likes",
+        $lookup: {
+          from: "likes",
           localField: "_id",
           foreignField: "video",
-          as: "likes"
-          
+          as: "likes",
         },
-        
       },
       {
         $addFields: {
-          likesCount : { $size: "$likes"},
-          
-        }
+          likesCount: { $size: "$likes" },
+        },
       },
       {
         $project: {
-        _id: 1,
-        likesCount: 1
-      
-        }
-      }
+          _id: 1,
+          likesCount: 1,
+        },
+      },
     ]);
     console.log(like);
     if (!like) {
       throw new ApiError(400, " Failed to like the video");
     }
-  
+
     return res
       .status(200)
-      .json(new ApiResponse(200, updatedVideo, "video like updated successfully"));
-}else{
-  await Like.deleteOne({_id: existingLike._id});
-  const updatedVideo = await Video.aggregate([
-    {
-      $match:{_id:  video._id}
-    },
-    {
-      $lookup:{
-        from : "likes",
-        localField: "_id",
-        foreignField: "video",
-        as: "likes"
-        
+      .json(
+        new ApiResponse(200, updatedVideo, "video like updated successfully")
+      );
+  } else {
+    await Like.deleteOne({ _id: existingLike._id });
+    const updatedVideo = await Video.aggregate([
+      {
+        $match: { _id: video._id },
       },
-      
-    },
-    {
-      $addFields: {
-        likesCount : { $size: "$likes"}
-      
-        
-      }
-    },
-    {
-      $project: {
-      _id: 1,
-      likesCount: 1
-      }
-    }
-  ]);
-  console.log(updatedVideo)
-  return res
-  .status(200)
-  .json(new ApiResponse(200,updatedVideo,"video unliked successfully"));
-
-}
+      {
+        $lookup: {
+          from: "likes",
+          localField: "_id",
+          foreignField: "video",
+          as: "likes",
+        },
+      },
+      {
+        $addFields: {
+          likesCount: { $size: "$likes" },
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          likesCount: 1,
+        },
+      },
+    ]);
+    console.log(updatedVideo);
+    return res
+      .status(200)
+      .json(new ApiResponse(200, updatedVideo, "video unliked successfully"));
+  }
 });
 
-
-export {
-  toggleVideoLike
-}
+export { toggleVideoLike };

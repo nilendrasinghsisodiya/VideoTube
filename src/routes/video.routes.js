@@ -1,42 +1,44 @@
-import { Router } from 'express';
+import { Router } from "express";
 import {
-    deleteVideo,
-    getAllVideos,
-    getVideoById,
-    publishAVideo,
-    togglePublishStatus,
-    updateVideo,
-} from "../controllers/video.controller.js"
-import {verifyJwt} from "../middlewares/auth.middleware.js"
-import {upload} from "../middlewares/multer.middleware.js"
+  deleteVideo,
+  getAllVideos,
+  getVideoById,
+  publishAVideo,
+  togglePublishStatus,
+  updateVideo,
+} from "../controllers/video.controller.js";
+import { verifyJwt } from "../middlewares/auth.middleware.js";
+import { upload } from "../middlewares/multer.middleware.js";
+import { getVideoComments } from "../controllers/comment.controller.js";
 
 const router = Router();
 router.use(verifyJwt); // Apply verifyJWT middleware to all routes in this file
 
 router
-    .route("/")
-    .get(getAllVideos)
-    .post(
-        upload.fields([
-            {
-                name: "videoFile",
-                maxCount: 1,
-            },
-            {
-                name: "thumbnail",
-                maxCount: 1,
-            },
-            
-        ]),
-        publishAVideo
-    );
+  .route("/")
+  .get(getAllVideos)
+  .post(
+    upload.fields([
+      {
+        name: "videoFile",
+        maxCount: 1,
+      },
+      {
+        name: "thumbnail",
+        maxCount: 1,
+      },
+    ]),
+    publishAVideo
+  );
+
+router.route("/:videoId").get(getVideoById).delete(deleteVideo);
+
+router.route("/comments").get(getVideoComments);
 
 router
-    .route("/:videoId")
-    .get(getVideoById)
-    .delete(deleteVideo)
-router.route("/update/:videoId/").patch(upload.single("thumbnail"), updateVideo);
+  .route("/update/:videoId/")
+  .patch(upload.single("thumbnail"), updateVideo);
 
 router.route("/toggle/publish/:videoId").patch(togglePublishStatus);
 
-export default router
+export default router;

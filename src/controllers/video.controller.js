@@ -37,7 +37,6 @@ const getAllVideos = asyncHandler(async (req, res) => {
     }
     const sortObj = sortBy ? { [sortBy]: sortOrder } : {}; // Default to no sorting
 
- 
     const aggregateQuery = [
       { $match: filter }, // Apply the filter
       { $sort: sortObj }, // Apply sorting
@@ -74,7 +73,6 @@ const getAllVideos = asyncHandler(async (req, res) => {
 const publishAVideo = asyncHandler(async (req, res) => {
   try {
     const { title, description } = req.body;
-
 
     // step 1 : check if user is logged in
     // step 2: check if video thumbnail description and title is provided
@@ -201,7 +199,6 @@ const updateVideo = asyncHandler(async (req, res) => {
   const thumbnailLocalPath = req?.file?.path; // Adjust to match file upload structure
   let updatedThumbnailLink = null;
 
-
   if (thumbnailLocalPath) {
     updatedThumbnailLink = await uploadOnCloudinary(thumbnailLocalPath);
     console.log(updatedThumbnailLink);
@@ -210,7 +207,7 @@ const updateVideo = asyncHandler(async (req, res) => {
     }
   }
   const oldPublicId = video.thumbnailPublicId;
-  
+
   const updateData = {};
   if (title) updateData.title = title;
   if (description) updateData.description = description;
@@ -222,7 +219,6 @@ const updateVideo = asyncHandler(async (req, res) => {
   if (Object.keys(updateData).length === 0) {
     throw new ApiError(400, "No details provided for update");
   }
-
 
   const updatedVideo = await Video.findByIdAndUpdate(
     videoId,
@@ -259,29 +255,24 @@ const deleteVideo = asyncHandler(async (req, res) => {
   const deletedRes = await Video.findByIdAndDelete(videoId);
   console.log("deleted video result form db : ", deletedRes);
 
-
   // deletes the actuall resource form cloud
   const videoDeletedResult = await deleteFromCloudinary(videoPublicId);
   const thumbnailDeletedResult = await deleteFromCloudinary(thumbnailPublicId);
   console.log("video dleted from cloudinary : ", videoDeletedResult);
   console.log("thumbnail deleted form cloudinary : ", thumbnailDeletedResult);
 
-  return res
-    .status(200)
-    .json(
-      new ApiResponse(
-        200,
-        {
-          deleteResult: {
-            thumbnail: thumbnailDeletedResult,
-            video: videoDeletedResult,
-          },
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        deleteResult: {
+          thumbnail: thumbnailDeletedResult,
+          video: videoDeletedResult,
         },
-        "video deleted successfully"
-      )
-    );
-
-
+      },
+      "video deleted successfully"
+    )
+  );
 });
 
 const togglePublishStatus = asyncHandler(async (req, res) => {

@@ -27,8 +27,6 @@ const createTweet = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, tweet, "tweet created succesfully"));
 });
 
-
-
 const updateTweet = asyncHandler(async (req, res) => {
   //TODO: update tweet
   const { tweetId } = req.params;
@@ -99,4 +97,4 @@ const deleteTweet = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "tweet deleted successfully"));
 });
 
-export { createTweet,  updateTweet, deleteTweet };
+export { createTweet, updateTweet, deleteTweet };

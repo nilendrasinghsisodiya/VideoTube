@@ -37,7 +37,7 @@ router.route("/login").post(loginUser);
 router.route("/logout").post(verifyJwt, logoutUser);
 
 router.route("/refresh-token").post(refreshAccessToken);
-router.route("/change-password").patch(verifyJwt,changeCurrentPassword);
+router.route("/change-password").patch(verifyJwt, changeCurrentPassword);
 router.route("/current-user").get(verifyJwt, getCurrentUser);
 router.route("/update-account").patch(verifyJwt, updateAccountDetails);
 
@@ -54,6 +54,6 @@ router.route("/channel/:username").get(verifyJwt, getUserChannelProfile);
 router.route("/history").get(verifyJwt, getUserWatchHistory);
 
 router.route("/playlists/:username").get(getUserPlaylists);
-router.route("/tweets/:username").get(getUserTweets)
+router.route("/tweets/:username").get(getUserTweets);
 
 export default router;
