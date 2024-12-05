@@ -8,7 +8,7 @@ const createPlaylist = asyncHandler(async (req, res) => {
   const { name, description } = req.body;
   const userId = req?.user._id;
   if (!userId) {
-    throw new ApiError(400, "You need to be logged In to create a playlist");
+    throw new ApiError(401, "Unauthorized Access");
   }
 
   if (!name || !description) {
@@ -152,12 +152,12 @@ const deletePlaylist = asyncHandler(async (req, res) => {
   }
   const userId = req?.user._id;
   if (!userId) {
-    throw new ApiError(400, "you need to be logged in to delete a playlist");
+    throw new ApiError(401, "Unauthorized Access");
   }
   const playlist = await Playlist.findById(playlistId);
   const isOwner = playlist.isOwner(userId);
   if (!isOwner) {
-    throw new ApiError(400, "you need to be owner to delete a playlist");
+    throw new ApiError(403, "Access forbidden");
   }
 
   const deleteRes = await Playlist.findByIdAndDelete(playlistId);
@@ -166,8 +166,8 @@ const deletePlaylist = asyncHandler(async (req, res) => {
     throw new ApiError(500, "falied to delete playlist");
   }
   return res
-    .status(200)
-    .json(new ApiResponse(200, {}, "playlist deleted successfully"));
+    .status(204)
+    .json(new ApiResponse(204, {}, "playlist deleted successfully"));
 });
 
 const updatePlaylist = asyncHandler(async (req, res) => {
@@ -176,7 +176,7 @@ const updatePlaylist = asyncHandler(async (req, res) => {
   //TODO: update playlist
   const userId = req?.user._id;
   if (!userId) {
-    throw new ApiError(400, "you need to be logged in to update a playlist");
+    throw new ApiError(401, "Unauthorized Access");
   }
   if (!isValidObjectId(playlist)) {
     throw new ApiError(400, "invalid playlist id");
@@ -184,7 +184,7 @@ const updatePlaylist = asyncHandler(async (req, res) => {
   const playlist = Playlist.findById(playlistId);
   const isOwner = playlist.isOwner(userId);
   if (!isOwner) {
-    throw new ApiError(400, "you have to be owner to update the playlist");
+    throw new ApiError(403, "you have to be owner to update the playlist");
   }
   const updatedDetails = {};
   if (name) {

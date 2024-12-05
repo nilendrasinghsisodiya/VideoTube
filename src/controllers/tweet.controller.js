@@ -13,7 +13,7 @@ const createTweet = asyncHandler(async (req, res) => {
   }
   const userId = req?.user?._id;
   if (!userId) {
-    throw new ApiError(400, "Unauthorized access");
+    throw new ApiError(401, "Unauthorized access");
   }
   const tweet = await Tweet.create({
     content: content,
@@ -39,7 +39,7 @@ const updateTweet = asyncHandler(async (req, res) => {
   }
   const userId = req?.user?._id;
   if (!userId) {
-    throw new ApiError(400, "Unauthorized access");
+    throw new ApiError(401, "Unauthorized access");
   }
 
   const isOwner = oldTweet.isOwner(userId);
@@ -74,19 +74,19 @@ const deleteTweet = asyncHandler(async (req, res) => {
   const { tweetId } = req.params;
   const userId = req?.user?._id;
   if (!userId) {
-    throw new ApiError(400, "Unauthorzied access");
+    throw new ApiError(401, "Unauthorzied access");
   }
   if (!isValidObjectId(tweetId)) {
     throw new ApiError(400, "invalid tweet Id");
   }
   const tweet = Tweet.findById(tweetId);
   if (!tweet) {
-    throw new ApiError(500, "tweet with this tweetId not found");
+    throw new ApiError(404, "tweet with this tweetId not found");
   }
 
   const isOwner = tweet.isOwner(userId);
   if (!isOwner) {
-    throw new ApiError(400, "you have to be owner to delete a tweet");
+    throw new ApiError(403, "you have to be owner to delete a tweet");
   }
   const deleteRes = await Tweet.findByIdAndDelete(tweetId);
   if (!deleteRes) {
