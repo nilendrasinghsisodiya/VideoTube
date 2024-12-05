@@ -12,12 +12,12 @@ import { upload } from "../middlewares/multer.middleware.js";
 import { getVideoComments } from "../controllers/comment.controller.js";
 
 const router = Router();
-router.use(verifyJwt); // Apply verifyJWT middleware to all routes in this file
+
 
 router
   .route("/")
-  .get(getAllVideos)
-  .post(
+  .get(verifyJwt,getAllVideos)
+  .post( verifyJwt,
     upload.fields([
       {
         name: "videoFile",
@@ -31,14 +31,14 @@ router
     publishAVideo
   );
 
-router.route("/:videoId").get(getVideoById).delete(deleteVideo);
+router.route("/:videoId").get(getVideoById).delete(verifyJwt,deleteVideo);
 
 router.route("/comments").get(getVideoComments);
 
 router
   .route("/update/:videoId/")
-  .patch(upload.single("thumbnail"), updateVideo);
+  .patch(verifyJwt,upload.single("thumbnail"), updateVideo);
 
-router.route("/toggle/publish/:videoId").patch(togglePublishStatus);
+router.route("/toggle/publish/:videoId").patch(verifyJwt,togglePublishStatus);
 
 export default router;
