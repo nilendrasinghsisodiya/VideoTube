@@ -52,7 +52,7 @@ const getPlaylistById = asyncHandler(async (req, res) => {
 const addVideoToPlaylist = asyncHandler(async (req, res) => {
   const userId = req?.user._id;
   if (!userId) {
-    throw new ApiError(400, "unauthorized access");
+    throw new ApiError(401, "unauthorized access");
   }
   const { playlistId, videos } = req.body;
 

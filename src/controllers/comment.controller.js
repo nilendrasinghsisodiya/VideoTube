@@ -36,7 +36,7 @@ const getVideoComments = asyncHandler(async (req, res) => {
   };
   const comments = await Comment.aggregatePaginate(aggregateQuery, options);
   if (!comments) {
-    throw new ApiError(500, "failed to find comments or no comments found");
+    throw new ApiError(404, "failed to find comments or no comments found");
   }
 
   return res
@@ -50,7 +50,7 @@ const addComment = asyncHandler(async (req, res) => {
   const { videoId, content } = req.body;
   const userId = req?.user._id;
   if (!userId) {
-    throw new ApiError(400, "Unauthorzied access");
+    throw new ApiError(401, "Unauthorzied access");
   }
 
   if (!isValidObjectId(videoId)) {
@@ -77,12 +77,12 @@ const updateComment = asyncHandler(async (req, res) => {
   // TODO: update a comment
   const { commentId, videoId, content } = req.body;
   const userId = req?.user._id;
-  if (!commentId || !videoID || !content) {
+  if (!commentId || !videoId || !content) {
     throw new ApiError(400, "empty cotent , commentId or videoId");
   }
 
   if (!userId) {
-    throw new ApiError(400, "unauthroized access");
+    throw new ApiError(401, "Unauthroized access");
   }
   if (!isValidObjectId(commentId || !isValidObjectId(videoId))) {
     throw new ApiError(400, "invalid  comment or  video Id");

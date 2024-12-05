@@ -82,7 +82,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
     // step 6: return res with video obj
     const userId = req?.user;
     if (!userId) {
-      throw new ApiError(400, "You need to be logged In to Publish a video");
+      throw new ApiError(401, "Unauthorized Access");
     }
 
     if (!title || !description) {
