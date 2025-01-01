@@ -45,7 +45,7 @@ const userSchema = new mongoose.Schema(
       type: String,
     },
     avatarPublicId: {
-      type: string, 
+      type: String, 
       required: true
     },
     coverImagePublicId:{

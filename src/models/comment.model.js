@@ -1,4 +1,4 @@
-import { Mongoose, Schema } from "mongoose";
+import mongoose,{  Schema } from "mongoose";
 import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2";
 
 const commentSchema = new Schema(
@@ -19,8 +19,8 @@ const commentSchema = new Schema(
   { timestamps: true }
 );
 
-Mongoose.plugin(mongooseAggregatePaginate);
+commentSchema.plugin(mongooseAggregatePaginate);
 commentSchema.methods.isOwner = function (userId) {
   return String(this.owner) === String(userId);
 };
-export const Comment = Mongoose.model("Comment", commentSchema);
+export const Comment = mongoose.model("Comment", commentSchema);

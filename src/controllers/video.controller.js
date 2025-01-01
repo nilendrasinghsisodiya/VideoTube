@@ -127,6 +127,8 @@ const publishAVideo = asyncHandler(async (req, res) => {
       description,
       owner: userId,
       duration: videoUrl?.duration,
+      thumbnailPublicId: thumbnailUrl?.public_id,
+      videoFilePublicId: videoUrl?.public_id,
     });
 
     if (!video) {
@@ -159,7 +161,9 @@ const getVideoById = asyncHandler(async (req, res) => {
     },
     { new: true }
   );
-  const userId = req?.user._id;
+  console.log("req.user : ", req?.user);
+  const userId = req?.user?._id;
+  
 
   if (userId) {
     const result = await User.findByIdAndUpdate(

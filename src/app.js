@@ -1,6 +1,9 @@
 import express from "express"
 import cors from "cors"
 import cookieParser from "cookie-parser"
+import path from 'path';
+import { fileURLToPath } from 'url';
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 
 
@@ -24,6 +27,7 @@ app.use(cookieParser())
 
 
 
+
 // routes import
 import userRouter from "./routes/user.routes.js"
 import likeRouter from "./routes/like.routes.js"
@@ -39,7 +43,7 @@ import dashboardRouter from "./routes/dashboard.routes.js"
 
 app.use("/api/v1/users",userRouter)
 
-app.use("api/v1/:videoID",likeRouter);
+app.use("/api/v1/:videoID",likeRouter);
 
 
 app.use("/api/v1/videos", videoRouter)
@@ -48,13 +52,15 @@ app.use("/api/v1/playlist",playlistRouter)
 
 app.use("/api/v1/comment",commentRouter)
 
-app.use("api/v1/dashboard",dashboardRouter)
+app.use("/api/v1/dashboard",dashboardRouter)
 
-app.use("api/v1/healthcheck",healthcheckRouter)
+app.use("/api/v1/healthcheck",healthcheckRouter)
 
-app.use("api/v1/tweet",tweetRouter)
-
-
+app.use("/api/v1/tweet",tweetRouter)
+app.use(express.static(path.join(__dirname,"dist")));
+app.get("*",(req,res)=>{
+    res.sendFile(path.join(__dirname,  "dist", "index.html"))
+})
 
 
 export {app}
