@@ -129,7 +129,7 @@ const loginUser = asyncHandler(async (req, res) => {
   if (email||username) {
     let userExist = await User.findOne({
       $or: [{ username }, { email }],
-    }).populate("videos");
+    });
     if (userExist) {
       const validPassword = await userExist.isPasswordCorrect(password);
       if (validPassword) {
