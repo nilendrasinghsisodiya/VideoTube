@@ -181,6 +181,7 @@ const getVideoById = asyncHandler(async (req, res) => {
   if (!video) {
     throw new ApiError(400, "Invalid videoId or the video does not exist");
   }
+  console.log(video);
 
   return res
     .status(200)
