@@ -16,7 +16,6 @@ const router = Router();
 
 router
   .route("/")
-  .get(verifyJwt,getAllVideos)
   .post( verifyJwt,
     upload.fields([
       {
@@ -31,14 +30,15 @@ router
     publishAVideo
   );
 
-router.route("/:videoId").get(getVideoById).delete(verifyJwt,deleteVideo);
-
-router.route("/comments").get(getVideoComments);
-
-router
+  router.route('/all').get(verifyJwt,getAllVideos);
+  
+  router.route("/comments/:videoId").get(getVideoComments);
+  
+  router
   .route("/update/:videoId/")
   .patch(verifyJwt,upload.single("thumbnail"), updateVideo);
-
-router.route("/toggle/publish/:videoId").patch(verifyJwt,togglePublishStatus);
+  
+  router.route("/toggle/publish/:videoId").patch(verifyJwt,togglePublishStatus);
+  router.route("/:videoId").get(getVideoById).delete(verifyJwt,deleteVideo);
 
 export default router;

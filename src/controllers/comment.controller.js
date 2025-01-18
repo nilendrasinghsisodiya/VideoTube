@@ -1,4 +1,4 @@
-import mongoose, { isValidObjectId } from "mongoose";
+import mongoose, { isValidObjectId ,Types} from "mongoose";
 import { Comment } from "../models/comment.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
@@ -7,6 +7,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 const getVideoComments = asyncHandler(async (req, res) => {
   //TODO: get all comments for a video
   const { videoId } = req.params;
+  console.log(videoId);
   const {
     page = 1,
     limit = 10,
@@ -18,11 +19,19 @@ const getVideoComments = asyncHandler(async (req, res) => {
   }
   const pageNum = Number(page);
   const pageLimit = Number(limit);
+  const sortOrder = sortType === "asc" ? 1 : -1;
   const aggregateQuery = [
-    { $match: { _id: videoId } },
-    { $sort: { [sortBy]: sortType } },
+    { $match: { video: new Types.ObjectId(videoId) } },
+    {$project: {
+      _id:1,
+      content:1,
+      createdAt:1,
+      owner:1,
+      }},
+    { $sort: { [sortBy]: sortOrder } },
     { $skip: (pageNum - 1) * pageLimit },
     { $limit: pageLimit },
+    
   ];
   const options = {
     page: pageNum,
@@ -80,12 +89,16 @@ const updateComment = asyncHandler(async (req, res) => {
   if (!commentId || !videoId || !content) {
     throw new ApiError(400, "empty cotent , commentId or videoId");
   }
-
+  
   if (!userId) {
     throw new ApiError(401, "Unauthroized access");
   }
   if (!isValidObjectId(commentId || !isValidObjectId(videoId))) {
     throw new ApiError(400, "invalid  comment or  video Id");
+  }
+  const isOwner = await Comment.findById(commentId).isOwner(userId);
+  if(!isOwner){
+    throw new ApiError(403,"unauthroized request");
   }
   const updatedComment = await Comment.findByIdAndUpdate(
     { _id: commentId },

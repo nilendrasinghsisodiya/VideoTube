@@ -43,6 +43,10 @@ const videoSchema = new Schema(
     thumbnailPublicId:{
       type: String,
       required: true
+    },
+    tags:{
+      type:[String],
+      
     }
   },
   {
