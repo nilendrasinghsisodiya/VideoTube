@@ -72,7 +72,7 @@ const getAllVideos = asyncHandler(async (req, res) => {
 
 const publishAVideo = asyncHandler(async (req, res) => {
   try {
-    const { title, description } = req.body;
+    const { title, description , tags} = req.body;
 
     // step 1 : check if user is logged in
     // step 2: check if video thumbnail description and title is provided
@@ -129,6 +129,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
       duration: videoUrl?.duration,
       thumbnailPublicId: thumbnailUrl?.public_id,
       videoFilePublicId: videoUrl?.public_id,
+      tags: tags? tags:[]
     });
 
     if (!video) {
@@ -148,7 +149,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
 });
 
 const getVideoById = asyncHandler(async (req, res) => {
-  const { videoId } = req.params;
+  const {videoId, userId} = req.body;
 
   const isValidId = isValidObjectId(videoId);
   if (!isValidId) {
@@ -161,19 +162,21 @@ const getVideoById = asyncHandler(async (req, res) => {
     },
     { new: true }
   );
-  console.log("req.user : ", req?.user);
-  const userId = req?.user?._id;
+  console.log("req.body : ", req?.body);
   
+  console.log(video);
 
   if (userId) {
     const result = await User.findByIdAndUpdate(
-      { _id: userId },
+      { _id:userId },
       {
         $addToSet: {
           watchHistory: videoId,
+          recentlyWatchedVideoTags: { $each: video.tags }
         },
       }
     );
+    console.log(result);
     if (!result) {
       throw new ApiError(500, "failed to add video to the user watch history");
     }
@@ -244,7 +247,7 @@ const updateVideo = asyncHandler(async (req, res) => {
 });
 
 const deleteVideo = asyncHandler(async (req, res) => {
-  const { videoId } = req.params;
+  const { videoId } = req.body;
   const video = await Video.findById(videoId);
   if (!video) {
     throw new ApiError(400, "video does not exist");

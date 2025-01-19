@@ -1,23 +1,28 @@
-import { Video } from "../models/video.model";
-import { User } from "../models/user.model";
 import mongoose, { isValidObjectId } from "mongoose";
+import { User } from "../models/user.model.js";
+import { Video } from "../models/video.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
 const getUserRecommendation = asyncHandler(async (req, res) => {
-    
+  const user = req.user;
+    const recentUserTags = await User.findById(user._id).select('recentlyWatchedVideoTags');
+    console.log(recentUserTags);
+    return res.status(200).json(new ApiResponse(200,recentUserTags,"recent watched video tags"));
+
 });
 
+
 const getRelatedVideos = asyncHandler(async (req, res) => {
-  const { videoId } = req.params;
+  const { videoId } = req.body;
   const { page = 1, limit = 10 } = req.query;
   const pageLimit = Number(limit);
   const pageNum = Number(page);
   if (!isValidObjectId(videoId)) {
     throw new ApiError(400, "invalid object id");
   }
-  const video = Video.findById(videoId);
+  const video = await Video.findById(videoId);
 
   // can be done with video.find but is less fesiable and can be more customized
   // can add a title matching system but would need to design it first 
@@ -29,36 +34,42 @@ const getRelatedVideos = asyncHandler(async (req, res) => {
   // 5. should be case insesitive}
   // 6. after that we should do tag based matching which is straight forward and assign weights to videos with more tags matched
   
-
+  const tags = Array.isArray(video.tags) ? video.tags : [];
+  console.log(video);
   const aggregationQuerry = [
     {
       $match: {
-        _id: { $ne: video._id }, // Exclude the given video
-        tags: { $in: tags }, // Match any tags that exist in the given video’s tags
+        _id: { $ne: video._id }, // Exclude the current video
+        tags: { $in: tags }, // Match videos that have tags in common
       },
     },
-    {$addFields:{
-        $size:{
-            $filter:{
-                input:"tags",
-                as:"tag",
-                cond: { 
-                    $in: ["$$tag", "$tags"] 
-                  }
-            }
-        }
-    }},
+    {
+      $addFields: {
+        tagMatchCount: {
+          $size: {
+            $filter: {
+              input: "$tags", // This is the tags in the document
+              as: "tag",
+              cond: { $in: ["$$tag", tags] }, // This should match tags passed into the aggregation
+            },
+          },
+        },
+      },
+    },
     {
       $project: {
         _id: 1,
         thumbnail: 1,
         createdAt: 1,
         views: 1,
+        tagMatchCount: 1, // Include the tag match count for sorting purposes
       },
     },
     { $skip: (pageNum - 1) * pageLimit },
     { $limit: pageLimit },
   ];
+  
+  
   const options = {
     page:pageNum,
     limit:pageLimit,
@@ -77,4 +88,4 @@ if(!relatedVideos){
 return res.status(200).json(new ApiResponse(200,relatedVideos,"related vidoes fetched successfully"));
 });
 
-export { getUserRecommendation, getRelatedVideos };
+export {getUserRecommendation, getRelatedVideos };

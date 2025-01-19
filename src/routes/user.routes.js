@@ -14,9 +14,10 @@ import {
   getUserPlaylists,
   getUserTweets,
 } from "../controllers/user.controller.js";
+
 import { upload } from "../middlewares/multer.middleware.js";
 import { verifyJwt } from "../middlewares/auth.middleware.js";
-
+import {getUserRecommendation} from '../controllers/recommendation.controller.js';
 const router = Router();
 
 router.route("/register").post(
@@ -54,6 +55,9 @@ router.route("/channel/:username").get( getUserChannelProfile);
 router.route("/history").get(verifyJwt, getUserWatchHistory);
 
 router.route("/playlists/:username").get(getUserPlaylists);
+router.route("/recommendations").get(verifyJwt, getUserRecommendation);
 router.route("/tweets/:username").get(getUserTweets);
+
+
 
 export default router;

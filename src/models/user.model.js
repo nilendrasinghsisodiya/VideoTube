@@ -45,13 +45,14 @@ const userSchema = new mongoose.Schema(
       type: String,
     },
     avatarPublicId: {
-      type: String, 
-      required: true
-    },
-    coverImagePublicId:{
       type: String,
-      required: true
-    }
+      required: true,
+    },
+    coverImagePublicId: {
+      type: String,
+      required: true,
+    },
+    recentlyWatchedVideoTags: [{ type: String}],
   },
   { timestamps: true }
 );
@@ -76,7 +77,7 @@ userSchema.methods.generateAccessToken = function () {
     },
     process.env.ACCESS_TOKEN_SECRET,
     {
-      expiresIn: process.env.ACCESS_TOKEN_EXPIRY // option object
+      expiresIn: process.env.ACCESS_TOKEN_EXPIRY, // option object
     }
   );
 };
